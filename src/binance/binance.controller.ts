@@ -7,17 +7,17 @@ import { WalletRestAPI } from '@binance/wallet';
 export class BinanceController {
     constructor(private readonly binance_service: BinanceService) {}
 
-    @Post()
+    @Post('create-order')
     async createOrder(){
         const payload = {
-            merchantTradeNo: `order-${Date.now()}`,
-            orderAmount: 0.05,
+            merchantTradeNo: 'order-001',
+            orderAmount: 0.50,
             currency: 'USDT',
             goods: {
                 goodsType: '01',
                 goodsCategory: 'D000',
                 referenceGoodsId: 'example-product',
-                goodsName: 'Ejemplo',
+                goodsName: 'Example',
                 goodsDetail: 'Descripción del producto',
             },
         };
