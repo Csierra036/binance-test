@@ -1,3 +1,4 @@
+<p>The purpose of this repository is to learn how to make a payment order with binance.</p>
 <h1 align="center">
  Notes:
 </h1>
