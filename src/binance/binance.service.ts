@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { CreateOrder } from './dto/create.order.dto';
+
 
 @Injectable()
 export class BinanceService {
@@ -39,7 +41,7 @@ export class BinanceService {
   }
 
 
-  async createBinancePayOrder() {
+  async createBinancePayOrder(orderRequest: CreateOrder) {
     const timestamp = Date.now().toString(); 
     const nonce = uuidv4().replace(/-/g, ''); //ID not repeteable
     const merchantTradeNo = this.generateMerchantTradeNo();
@@ -48,9 +50,9 @@ export class BinanceService {
         terminalType: "WEB",
       },
       merchantTradeNo: merchantTradeNo,
-      orderAmount: 0.10,
-      currency: "USDT",
-      description: "very good Ice Cream",
+      orderAmount: orderRequest.orderAmount,
+      currency: orderRequest.currency,
+      description: orderRequest.description,
       goodsDetails: [
         {
           goodsType: "01",
