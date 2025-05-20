@@ -1,19 +1,13 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Post } from '@nestjs/common';
 import { BinanceService } from './binance.service';
-import { Get } from '@nestjs/common';
-import { WalletRestAPI } from '@binance/wallet';
-
+import { CreateOrder } from './dto/create.order.dto';
+import { Body } from '@nestjs/common';
 @Controller('binance')
 export class BinanceController {
     constructor(private readonly binance_service: BinanceService) {}
 
-    @Get('get-account-info')
-    getAccountInfo(): Promise<WalletRestAPI.AccountInfoResponse> {
-        return this.binance_service.GetAccountInfo();
-    }
-    
-    @Get('check-wallet')
-    getWallet(): Promise<WalletRestAPI.QueryUserWalletBalanceResponse >{
-        return this.binance_service.GetCheck();
+    @Post('create-order')
+    async createOrder(@Body() CreateOrder: CreateOrder) {
+        return this.binance_service.createBinancePayOrder(CreateOrder);
     }
 }
