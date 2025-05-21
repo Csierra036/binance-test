@@ -4,18 +4,17 @@ import axios from 'axios';
 import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrder } from './dto/create.order.dto';
-
+import { CloseOrder } from './dto/close.order.dto';
 
 @Injectable()
 export class BinanceService {
   private apiKey: string;
   private apiSecret: string;
-  private endpoint: string;
+
 
   constructor(private readonly configService: ConfigService) {
     this.apiKey = this.checkEnvConfig('BINANCE_API_KEY');
     this.apiSecret = this.checkEnvConfig('BINANCE_API_SECRET');
-    this.endpoint = 'https://bpay.binanceapi.com/binancepay/openapi/v3/order';
   }
 
 
@@ -41,10 +40,67 @@ export class BinanceService {
   }
 
 
+  private assignHeader(timestamp: string, nonce: string, signature: string) {
+    const headers = {
+      "Content-Type": "application/json",
+      "BinancePay-Timestamp": timestamp,
+      "BinancePay-Nonce": nonce,
+      "BinancePay-Certificate-SN": this.apiKey,
+      "BinancePay-Signature": signature,
+    };
+    return headers;
+  }
+
+
+  async CloseBinancePayOrder(closeOrderRequest: CloseOrder){
+    console.log(closeOrderRequest)
+    const timestamp = Date.now().toString(); 
+    const nonce = uuidv4().replace(/-/g, ''); //ID not repeteable
+
+    const payload = {
+      "merchantTradeNo": closeOrderRequest.merchantTradeNo,
+      "prepayId": null
+    }
+    const payloadStr = JSON.stringify(payload);
+    const signature = this.signPayload(payloadStr, timestamp, nonce);
+    const header = this.assignHeader(timestamp, nonce, signature);
+
+    try{
+      const response = await axios.post(
+        'https://bpay.binanceapi.com/binancepay/openapi/order/close',
+        payload,
+        { headers: header }
+      )
+
+      const data = response.data;
+      if (data.status === 'SUCCESS') {
+        return {
+          statusCode: 200,
+          message: 'Orden cancelada correctamente',
+          data: data.data
+        };
+      } else {
+        return {
+          statusCode: 400,
+          message: 'Error al cancelar la orden',
+          error: data
+        };
+      }
+    }catch(error){
+      return {
+        statusCode: 500,
+        message: "Error in the request: ",
+        error: error.response?.data || error.message
+      };
+    }
+  }
+
+
   async createBinancePayOrder(orderRequest: CreateOrder) {
     const timestamp = Date.now().toString(); 
     const nonce = uuidv4().replace(/-/g, ''); //ID not repeteable
     const merchantTradeNo = this.generateMerchantTradeNo();
+    
     const payload = {
       env: {
         terminalType: "WEB",
@@ -66,20 +122,13 @@ export class BinanceService {
 
     const payloadStr = JSON.stringify(payload);
     const signature = this.signPayload(payloadStr, timestamp, nonce);
-
+    const header = this.assignHeader(timestamp, nonce, signature)
+    
     try {
       const response = await axios.post(
-        this.endpoint,
+        'https://bpay.binanceapi.com/binancepay/openapi/v3/order',
         payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "BinancePay-Timestamp": timestamp.toString(),
-            "BinancePay-Nonce": nonce,
-            "BinancePay-Certificate-SN": this.apiKey,
-            "BinancePay-Signature": signature,
-          },
-        }
+        { headers: header }
       );
 
       const data = response.data;
@@ -91,7 +140,7 @@ export class BinanceService {
           message: "Order create successfully.",
           checkoutUrl: data.data.checkoutUrl,
           orderId: data.data.orderId,
-          tradeNo: nonce
+          tradeNo: merchantTradeNo
         };
       } else {
         return {
